@@ -20,9 +20,11 @@ from calmjs.toolchain import ADVICE_PACKAGES
 from calmjs.toolchain import ARTIFACT_PATHS
 from calmjs.toolchain import CALMJS_TEST_REGISTRY_NAMES
 from calmjs.toolchain import TEST_PACKAGE_NAMES
+from calmjs.runtime import BaseRuntime
 from calmjs.runtime import ToolchainRuntime
 from calmjs.runtime import DriverRuntime
 from calmjs.runtime import Runtime
+from calmjs.registry import get
 
 from calmjs.dev.cli import KarmaDriver
 from calmjs.dev.toolchain import KarmaToolchain
@@ -261,6 +263,37 @@ class TestToolchainRuntime(ToolchainRuntime):
         """
         Do nothing, as no export targets.
         """
+
+
+class VerifyArtifactRuntime(BaseRuntime):
+    """
+    karma runner for verifying pre-built artifacts of packages
+    """
+
+    def init_argparser(self, argparser):
+        """
+        Keep everything in parent as the overrides are applied above.
+        The working directory option is also kept.
+        """
+
+        super(VerifyArtifactRuntime, self).init_argparser(argparser)
+
+        argparser.add_argument(
+            dest=TEST_PACKAGE_NAMES, nargs='+', default=[],
+            metavar='<package>',
+            help='Python package to gather JavaScript tests from; '
+                 'no package dependency resolution will be applied'
+        )
+
+        init_argparser_common(argparser)
+
+    def run(self, argparser=None, **kwargs):
+        registry = get('calmjs.artifacts.tests')
+        # XXX process the loops directly using the registry api
+        for package in kwargs[TEST_PACKAGE_NAMES]:
+            registry.process_package(package)
+        # XXX dummy result value
+        return True
 
 
 class KarmaRuntime(Runtime, DriverRuntime):
